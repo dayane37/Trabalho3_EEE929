@@ -1,5 +1,5 @@
 /**
- * Criado por João Marcus Soares Callegari
+ * Criado por Dayane do Carmo MendonÃ§a
  * Aquivo: main.c
  */
 
@@ -48,10 +48,10 @@ static void System_Init(void)
     Setup_GPIO();
 
     EALLOW;
-    PieVectTable.TIMER0_INT = &isr_cpu_timer0;   // Redirecionar interrupção do timer para função
-    PieCtrlRegs.PIEIER1.bit.INTx7 = 1;           // Habilita coluna da interrupção do timer 0
+    PieVectTable.TIMER0_INT = &isr_cpu_timer0;   // Redirecionar interrupÃ§Ã£o do timer para funÃ§Ã£o
+    PieCtrlRegs.PIEIER1.bit.INTx7 = 1;           // Habilita coluna da interrupÃ§Ã£o do timer 0
     EDIS;
-    IER |= M_INT1;                              // +M_INT2 Habilita interrupções da linha 1
+    IER |= M_INT1;                              // +M_INT2 Habilita interrupÃ§Ãµes da linha 1
 
     InitCpuTimers();
     ConfigCpuTimer(&CpuTimer0, 200, 1000000);
