@@ -17,6 +17,10 @@ int main(void)
 
     System_Init(); // System initialization and setup Peripherals: ADC, GPIO, PWM, interruptions
 
+    EPwm4Regs.CMPA.bit.CMPA = 1500;
+    EPwm5Regs.CMPA.bit.CMPA = 1500;
+    EPwm6Regs.CMPA.bit.CMPA = 1500;
+
     while(1){
 
 
@@ -48,6 +52,7 @@ static void System_Init(void)
     InitPieVectTable();             //Initialize the PIE vector table
 
     Setup_GPIO();
+    Setup_ePWM();
 
     EALLOW;
     PieVectTable.TIMER0_INT = &isr_cpu_timer0;   // Redirecionar interrupção do timer para função
