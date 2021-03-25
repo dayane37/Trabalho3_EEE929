@@ -1,40 +1,19 @@
 /**
- * Criado por Dayane do Carmo Mendonça
+ * Criado por João Marcus Soares Callegari
  * Aquivo: main.c
  */
 
+#include "main.h"
 
-#include "stdlib.h"
-#include "stdio.h"
-#include "math.h"
-#include "string.h"
-#include "F28x_Project.h"
 
-//Initialization
-static void System_Init(void);
-
-// Interruptions
-__interrupt void isr_cpu_timer0(void);
-
+/****************************************************************************************
+ *************************      GLOBAL VARIABLES DECLARATION        *********************
+ ****************************************************************************************/
 
 int main(void)
 {
-    EALLOW;
-    // Leds
-    GpioCtrlRegs.GPAGMUX2.bit.GPIO31 = 0;  // Configura o agrupamento como GPIO
-    GpioCtrlRegs.GPAMUX2.bit.GPIO31 = 0;   // Configura o periférico como GPIO
-    GpioCtrlRegs.GPADIR.bit.GPIO31 = 1;    //Configure GPIO as output pin (LED AZUL)
-    GpioCtrlRegs.GPAPUD.bit.GPIO31 = 1;    // Disable pull-up on GPIO31
-    GpioCtrlRegs.GPACSEL4.bit.GPIO31 = GPIO_MUX_CPU1;    // Passa controle do pino para CPU1
 
-    GpioCtrlRegs.GPBGMUX1.bit.GPIO34 = 0;               // Configura o agrupamento como GPIO
-    GpioCtrlRegs.GPBMUX1.bit.GPIO34 = 0;                // Configura o periférico como GPIO
-    GpioCtrlRegs.GPBDIR.bit.GPIO34 = 1;                 //Configure GPIO as output pin (LED vermelho)
-    GpioCtrlRegs.GPBPUD.bit.GPIO34 = 1;                 // Disable pull-up on GPIO34
-    GpioCtrlRegs.GPBCSEL1.bit.GPIO34 = GPIO_MUX_CPU1;    // Passa controle do pino para CPU1
-    EDIS;
-
-    System_Init();
+    System_Init(); // System initialization and setup Peripherals: ADC, GPIO, PWM, interruptions
 
     while(1){
 
@@ -66,6 +45,7 @@ static void System_Init(void)
     IFR = 0x0000;                   //Clear all CPU interrupt flags
     InitPieVectTable();             //Initialize the PIE vector table
 
+    Setup_GPIO();
 
     EALLOW;
     PieVectTable.TIMER0_INT = &isr_cpu_timer0;   // Redirecionar interrupção do timer para função
