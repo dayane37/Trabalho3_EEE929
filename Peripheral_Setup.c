@@ -2,9 +2,7 @@
  * Peripheral_Setup.c
  *
  *  Created on: 28 de fev de 2021
- * Criado por João Marcus Soares Callegari
- *            Dayane do Carmo Mendonça
- *            William Caires Silva Amorim
+ *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  */
 
 #include "Peripheral_Setup.h"

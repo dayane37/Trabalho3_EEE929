@@ -2,7 +2,7 @@
  * Peripheral_Setup.h
  *
  *  Created on: 28 de fev de 2021
- *      Author: João Marcus Soares Callegari
+ *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  */
 
 #ifndef PERIPHERAL_SETUP_H_

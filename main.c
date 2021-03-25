@@ -1,7 +1,5 @@
 /**
- * Criado por João Marcus Soares Callegari
- *            Dayane do Carmo Mendonça
- *            William Caires Silva Amorim
+ * Criado por Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  * Aquivo: main.c
  */
 
@@ -11,9 +9,12 @@
 /****************************************************************************************
  *************************      GLOBAL VARIABLES DECLARATION        *********************
  ****************************************************************************************/
+static Inverter inv;
 
 int main(void)
 {
+
+    Data_Init(); // Setup data structure
 
     System_Init(); // System initialization and setup Peripherals: ADC, GPIO, PWM, interruptions
 
@@ -37,6 +38,11 @@ __interrupt void isr_cpu_timer0(void){
 __interrupt void isr_adc(void){
     GpioDataRegs.GPADAT.bit.GPIO15 = 1;    //Change pin state to verify task time consumption
 
+    //Medições
+    inv.Vcc = VDC_SCALE*AdcaResultRegs.ADCRESULT2;
+    Msrmt_Update(&inv.Ifa, AdccResultRegs.ADCRESULT0-2252);
+    Msrmt_Update(&inv.Ifb, AdcbResultRegs.ADCRESULT0-2252);
+    Msrmt_Update(&inv.Ifc, AdcaResultRegs.ADCRESULT0-2252);
 
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;      // Limpa flag INT1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;     // Limpa flag
@@ -47,6 +53,18 @@ __interrupt void isr_adc(void){
     EPwm5Regs.CMPA.bit.CMPA = 1500;
     EPwm6Regs.CMPA.bit.CMPA = 1500;
 
+}
+
+
+static void Data_Init(void)
+{
+    memset(&inv, 0, sizeof(Inverter));
+
+    //Variables initialization
+    Msrmt_Init(&inv.Ifa,IO_SCALE, 1, 0, 0);
+    Msrmt_Init(&inv.Ifb,IO_SCALE, 1, 0, 0);
+    Msrmt_Init(&inv.Ifc,IO_SCALE, 1, 0, 0);
+    inv.freq = fn;
 }
 
 

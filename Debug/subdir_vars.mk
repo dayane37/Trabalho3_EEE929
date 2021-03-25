@@ -22,6 +22,7 @@ C_SRCS += \
 ../F2837xD_PieCtrl.c \
 ../F2837xD_PieVect.c \
 ../F2837xD_SysCtrl.c \
+../Measurements.c \
 ../Peripheral_Setup.c \
 ../main.c 
 
@@ -34,6 +35,7 @@ C_DEPS += \
 ./F2837xD_PieCtrl.d \
 ./F2837xD_PieVect.d \
 ./F2837xD_SysCtrl.d \
+./Measurements.d \
 ./Peripheral_Setup.d \
 ./main.d 
 
@@ -48,6 +50,7 @@ OBJS += \
 ./F2837xD_PieVect.obj \
 ./F2837xD_SysCtrl.obj \
 ./F2837xD_usDelay.obj \
+./Measurements.obj \
 ./Peripheral_Setup.obj \
 ./main.obj 
 
@@ -66,6 +69,7 @@ OBJS__QUOTED += \
 "F2837xD_PieVect.obj" \
 "F2837xD_SysCtrl.obj" \
 "F2837xD_usDelay.obj" \
+"Measurements.obj" \
 "Peripheral_Setup.obj" \
 "main.obj" 
 
@@ -78,6 +82,7 @@ C_DEPS__QUOTED += \
 "F2837xD_PieCtrl.d" \
 "F2837xD_PieVect.d" \
 "F2837xD_SysCtrl.d" \
+"Measurements.d" \
 "Peripheral_Setup.d" \
 "main.d" 
 
@@ -94,6 +99,7 @@ C_SRCS__QUOTED += \
 "../F2837xD_PieCtrl.c" \
 "../F2837xD_PieVect.c" \
 "../F2837xD_SysCtrl.c" \
+"../Measurements.c" \
 "../Peripheral_Setup.c" \
 "../main.c" 
 
