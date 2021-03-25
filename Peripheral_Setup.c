@@ -178,3 +178,76 @@ void Setup_ePWM(void){
     //*/
 }
 
+
+void Setup_ADC(void){
+
+    Uint16 acqps; // Determina a janela de aquisição mínima
+
+    EALLOW;
+
+    AdcaRegs.ADCCTL2.bit.PRESCALE = 6;        // Divide por 4
+    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+    AdcbRegs.ADCCTL2.bit.PRESCALE = 6;        // Divide por 4
+    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+    AdccRegs.ADCCTL2.bit.PRESCALE = 6;        // Divide por 4
+    AdcSetMode(ADC_ADCC, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+
+    AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;    //ADCINT1 trips after AdcResults latch
+    AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;    //ADCINT1 trips after AdcResults latch
+    AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;    //ADCINT1 trips after AdcResults latch
+
+    if(ADC_RESOLUTION_12BIT == AdcaRegs.ADCCTL2.bit.RESOLUTION) acqps = 14;     // ADC de 12 bits: 25*5 ns
+    else acqps = 63;                                                            // ADC de 16 bits: 320 ns
+
+
+    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 4;       //Set SOC0 channel select to ADCINA4 (Ia)
+    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 5;       //Set SOC1 channel select to ADCINA5 (Va)
+    AdcaRegs.ADCSOC2CTL.bit.CHSEL = 15;       //Set SOC0 channel select to ADCIN15 (Vdc)
+    AdcaRegs.ADCSOC0CTL.bit.ACQPS = acqps;   //set SOC0 S/H Window
+    AdcaRegs.ADCSOC1CTL.bit.ACQPS = acqps;   //set SOC1 S/H Window
+    AdcaRegs.ADCSOC2CTL.bit.ACQPS = acqps;    //set SOC0 S/H Window
+    AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 11;   //SOC Trigger source select ePWM4A
+    AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = 11;   //sSOC Trigger source select ePWM4A
+    AdcaRegs.ADCSOC2CTL.bit.TRIGSEL = 11;     //SOC Trigger source select ePWM4A
+
+    AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4;       //Set SOC0 channel select to ADCINB4 (Ib)
+    AdcbRegs.ADCSOC1CTL.bit.CHSEL = 5;       //Set SOC1 channel select to ADCINB5 (Vb)
+    AdcbRegs.ADCSOC0CTL.bit.ACQPS = acqps;   //set SOC0 S/H Window
+    AdcbRegs.ADCSOC1CTL.bit.ACQPS = acqps;   //set SOC1 S/H Window
+    AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 11;   //SOC Trigger source select ePWM4A
+    AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = 11;   //SOC Trigger source select ePWM4A
+
+    AdccRegs.ADCSOC0CTL.bit.CHSEL = 4;       //Set SOC0 channel select to ADCINC4 (Ic)
+    AdccRegs.ADCSOC1CTL.bit.CHSEL = 5;       //Set SOC1 channel select to ADCINC5 (Vc)
+    AdccRegs.ADCSOC0CTL.bit.ACQPS = acqps;   //set SOC0 S/H Window
+    AdccRegs.ADCSOC1CTL.bit.ACQPS = acqps;   //set SOC1 S/H Window
+    AdccRegs.ADCSOC0CTL.bit.TRIGSEL = 11;   //SOC Trigger source select ePWM4A
+    AdccRegs.ADCSOC1CTL.bit.TRIGSEL = 11;   //SOC Trigger source select ePWM4A
+
+    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 2;      //setup EOC6 to trigger ADCINT1 to fire
+    AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1;        //Enabled ADCINT1
+    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Disable ADCINT1 Continuous mode
+
+    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 1;      //setup EOC6 to trigger ADCINT1 to fire
+    AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1;        //Enabled ADCINT1
+    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Disable ADCINT1 Continuous mode
+
+    AdccRegs.ADCINTSEL1N2.bit.INT1SEL = 1;      //setup EOC6 to trigger ADCINT1 to fire
+    AdccRegs.ADCINTSEL1N2.bit.INT1E = 1;        //Enabled ADCINT1
+    AdccRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Disable ADCINT1 Continuous mode
+
+    //AdcRegs.ADCINTSEL1N2.bit.INT1SEL = 0;      //setup EOC6 to trigger ADCINT1 to fire
+    //AdcRegs.ADCINTSEL1N2.bit.INT1E = 1;        //Enabled ADCINT1
+   // AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Disable ADCINT1 Continuous mode
+    AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;       // Power up the adc
+    AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;       // Power up the adc
+    AdccRegs.ADCCTL1.bit.ADCPWDNZ = 1;       // Power up the adc
+
+
+    DELAY_US(1000);                          // Espera 1 ms para o adc ligar
+
+    EDIS;
+
+}
+
+
