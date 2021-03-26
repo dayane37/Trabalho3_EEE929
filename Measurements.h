@@ -21,6 +21,11 @@
 #define N_SAMPLES_INV (1.0/N_SAMPLES) //Inverse of N_SAMPLES
 #define NOM_GRID_FREQ 50
 
+typedef enum{
+    OFFSET_CALC,
+    READY
+}msrmt_state_t;
+
 typedef struct{
     int rmv_offset;
     int rms_calc;
@@ -45,5 +50,6 @@ void Msrmt_Init(MEASUREMENT *M, float scale, int rmv_offset, int rms_calc, int t
 __attribute__((always_inline)) void Msrmt_Update(MEASUREMENT *M, int adc_read);
 __attribute__((always_inline)) void Msrmt_Index_Update(void);
 __attribute__((always_inline)) int Msrmt_Index_Get(void);
+msrmt_state_t Msrmt_State_Get(void);
 
 #endif /* MEASUREMENTS_H_ */

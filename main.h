@@ -1,7 +1,7 @@
 /*
  * main.h
  *
- *  Created on: 9 de mar de 2021 
+ *  Created on: 9 de mar de 2021
  *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  */
 
@@ -49,16 +49,45 @@
 #define F_MIN       45.5                    //Minimum operating frequency (ABNT 16149)_IQ22(57.5) _IQ22(55.5)
 #define F_MAX       55.5                        //Maximum operating frequency (ABNT 16149)_IQ22(62.5) _IQ22(65.5)
 
+
+typedef enum{
+    TURNED_ON=0,        //Processor just turned on
+    START_UP_COMPLETE,  //Peripheral initialization, VG buffer filled
+    PRE_SYNC_COMPLETE,  //Pre-sync algorithm tracked reference (Ex PLL tracked)
+    CONNECTED,          //Connection relay on
+    PWM_ON,             //PWM has started operation
+    HAVE_ERROR          //Indicates that some error have occurred
+}inverter_state_t;
+
+//Allowed types of inverter operation
+typedef enum {
+    Undefined_Mode, Grid_Feeding, Grid_Forming
+} operation_mode_t;
+
 typedef enum {
     NO_ERROR,INVERTER_OVERCURRENT_0,INVERTER_OVERCURRENT_1,INVERTER_OVERCURRENT_2, INVERTER_OVERCURRENT_RMS, BOOST_OVERCURRENT, RCMU_LIMIT_EXCEED, VCC_OVERVOLTAGE,
                          TEMP_LIMIT_EXCEED, VGRID_OVERVOLTAGE, VGRID_UNDERVOLTAGE, GRID_FREQUENCY_HIGH,
                          GRID_FREQUENCY_LOW, INIT_FAIL,UNDEFINED_INVERTER_MODE} err_code_t;
 
+typedef struct{
+    float a;
+    float b;
+    float c;
+} ABC;
+
+typedef struct{
+    float alfa;
+    float beta;
+} ALFABETA;
 
 typedef struct{
    MEASUREMENT Ifa;        //Analog filtered Output Current
    MEASUREMENT Ifb;        //Analog filtered Output Current
    MEASUREMENT Ifc;        //Analog filtered Output Current
+   ABC Vabc;
+   ABC Iabc;
+   ALFABETA Valfabeta;
+   ALFABETA Ialfabeta;
    float Vcc;              //Voltage on DC bus (regulated by boost)
    float freq;             //Measured Frequency
    float temp;             //Inverter temperature
@@ -68,6 +97,8 @@ typedef struct{
    float ioref_alfa;
    float ioref_beta;
    float voref;
+   inverter_state_t State; //Inverter state
+   operation_mode_t Mode;  //Inverter mode
    err_code_t Error;           //Error Code
 }Inverter;
 
@@ -83,6 +114,7 @@ static void Setup_Controllers(void);
 //Control
 __attribute__((always_inline)) void I_V_Control(void);
 __attribute__((always_inline)) void PLL_Loop(void);
+__attribute__((always_inline)) int Pre_Sync(void);
 __attribute__((always_inline)) void Current_Loop(void);
 
 //Protection

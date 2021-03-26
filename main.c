@@ -1,6 +1,5 @@
 /**
- *  Created on: 9 de mar de 2021 
- *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ * Criado por Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  * Aquivo: main.c
  */
 
@@ -28,6 +27,9 @@ float Vpwm_norm_b = 0;
 float Vpwm_norm_c = 0;
 uint16_t dutya = 0, dutyb = 0, dutyc = 0;
 
+// Manual command to pass from presync to connected state
+int Manual_Presync=0;
+
 // Manual command to turn on PWM
 int Manual_Start=0;
 
@@ -38,20 +40,53 @@ int main(void)
 
     System_Init(); // System initialization and setup Peripherals: ADC, GPIO, PWM, interruptions
 
+    Operation_Mode();  //Check the inverter operating mode
+
     while(1){
 
+// State Machine---------------------------------------------------------
+        switch (inv.State)
+        {
+        case TURNED_ON:
+            if(inv.Mode==Undefined_Mode)
+            {
+                Error_Handler(UNDEFINED_INVERTER_MODE);
+            }
+            else if(Msrmt_State_Get()==READY)
+            {
+                inv.State = START_UP_COMPLETE;
+            }
+            break;
+        case START_UP_COMPLETE:
+            if (Pre_Sync())
+            {
+                inv.State = PRE_SYNC_COMPLETE;
+            }
+            break;
+        case PRE_SYNC_COMPLETE:
+            inv.State = CONNECTED;
+            break;
+        case CONNECTED:
 
-      if (Manual_Start)
-      {
-          PWM_Enable();
-      }
-
-      if (!Manual_Start)
-      {
-          PWM_Disable();
-      }
-
+            if(!Pre_Sync()) inv.State = START_UP_COMPLETE;
+            else if (Manual_Start) {
+                inv.State = PWM_ON;
+                PWM_Enable();
+            }
+            break;
+        case PWM_ON:
+            if (!Manual_Start)
+            {
+                PWM_Disable();
+                inv.State = CONNECTED;
+            }
+            break;
+        case HAVE_ERROR:
+            //Do nothing
+            break;
+        }
     }
+
 }
 
 
@@ -74,17 +109,18 @@ __interrupt void isr_adc(void){
     Msrmt_Update(&inv.Ifb, AdcbResultRegs.ADCRESULT0-2252);
     Msrmt_Update(&inv.Ifc, AdcaResultRegs.ADCRESULT0-2252);
 
-   PLL_Loop();
+   if(inv.State >= START_UP_COMPLETE) PLL_Loop();
+   if(inv.State >= PRE_SYNC_COMPLETE) inv.freq = fo; //Get Grid frequency for protection routine
 
    // PROTECTION ALGORITHM (PWM is disabled if limits are exceeded)
    Voltage_Protection();
    OverCurrent_Protection();
    Frequency_Protection();
 
-   if (Manual_Start)
-   {
-       Current_Loop();
-   }
+   if (inv.State == PWM_ON)
+      {
+         Current_Loop();
+      }
 
       Msrmt_Index_Update();
 
@@ -111,6 +147,7 @@ __attribute__((always_inline)) void PLL_Loop()
 
 __attribute__((always_inline)) void Current_Loop()
 {
+
 
     Vpwm_norm_a = ref_mod*cos_a;
     Vpwm_norm_b = ref_mod*cos_b;
@@ -161,6 +198,8 @@ __attribute__((always_inline)) void Frequency_Protection(void)
 __attribute__((always_inline)) void Error_Handler(err_code_t errorCode)
 {
     PWM_Disable();
+    inv.State = HAVE_ERROR;
+    inv.Error = errorCode;
 }
 
 static void PWM_Enable(void)
@@ -174,6 +213,12 @@ static void PWM_Disable(void)
     GpioDataRegs.GPADAT.bit.GPIO26 = 1; //Disable PWM
 }
 
+
+
+__attribute__((always_inline)) int Pre_Sync(void)
+{
+   return Manual_Presync;
+}
 
 static void Data_Init(void)
 {
@@ -222,4 +267,8 @@ static void System_Init(void)
 
 }
 
+static void Operation_Mode(void)
+{
+    inv.Mode=Grid_Feeding;
+}
 
