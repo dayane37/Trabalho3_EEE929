@@ -27,6 +27,12 @@ float Vpwm_norm_b = 0;
 float Vpwm_norm_c = 0;
 uint16_t dutya = 0, dutyb = 0, dutyc = 0;
 
+#define PLOT_SAMPLES 400
+float Channel_1[PLOT_SAMPLES];
+float *p_Channel1 = &(inv.Ifa.inst);
+float Channel_2[PLOT_SAMPLES];
+float *p_Channel2 = &(inv.Ifb.inst);
+
 // Manual command to pass from presync to connected state
 int Manual_Presync=0;
 
@@ -129,6 +135,8 @@ __interrupt void isr_adc(void){
 
     GpioDataRegs.GPADAT.bit.GPIO15 = 0; //Change pin state to verify task time consumption
 
+    Plot();
+
 }
 //*/
 
@@ -218,6 +226,14 @@ static void PWM_Disable(void)
 __attribute__((always_inline)) int Pre_Sync(void)
 {
    return Manual_Presync;
+}
+
+__attribute__((always_inline)) void Plot(void)
+{
+    static unsigned int plot_ind_vetor = 0;
+    Channel_1[plot_ind_vetor] = *p_Channel1;
+    Channel_2[plot_ind_vetor] = *p_Channel2;
+    plot_ind_vetor = (plot_ind_vetor == (PLOT_SAMPLES - 1)) ? 0 : (plot_ind_vetor + 1);
 }
 
 static void Data_Init(void)

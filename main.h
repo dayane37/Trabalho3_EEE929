@@ -124,6 +124,7 @@ __attribute__((always_inline)) void Frequency_Protection(void);
 __attribute__((always_inline)) void Error_Handler(err_code_t error);
 static void PWM_Enable(void);
 static void PWM_Disable(void);
+__attribute__((always_inline)) void Plot(void);
 
 // Interruptions
 __interrupt void isr_cpu_timer0(void);
