@@ -21,6 +21,8 @@ void Msrmt_Init(MEASUREMENT *M, float scale, int rmv_offset, int rms_calc, int t
 
 __attribute__((always_inline)) void Msrmt_Update(MEASUREMENT *M, int adc_read)
 {
+        float old_div_n,new_div_n;
+
         M->adc_read = adc_read;
 
         M->inst = M->scale*adc_read;

@@ -43,5 +43,7 @@ typedef struct{
 
 void Msrmt_Init(MEASUREMENT *M, float scale, int rmv_offset, int rms_calc, int thd_calc);
 __attribute__((always_inline)) void Msrmt_Update(MEASUREMENT *M, int adc_read);
+__attribute__((always_inline)) void Msrmt_Index_Update(void);
+__attribute__((always_inline)) int Msrmt_Index_Get(void);
 
 #endif /* MEASUREMENTS_H_ */

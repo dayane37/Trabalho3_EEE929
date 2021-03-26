@@ -1,7 +1,8 @@
 /*
  * main.h
  *
- *  Created on: 9 de mar de 2021 *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ *  Created on: 9 de mar de 2021 
+ *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  */
 
 #include "Peripheral_Setup.h"
@@ -76,6 +77,13 @@ typedef struct{
 //Initialization
 static void Data_Init(void);
 static void System_Init(void);
+static void Operation_Mode(void);
+static void Setup_Controllers(void);
+
+//Control
+__attribute__((always_inline)) void I_V_Control(void);
+__attribute__((always_inline)) void PLL_Loop(void);
+__attribute__((always_inline)) void Current_Loop(void);
 
 //Protection
 __attribute__((always_inline)) void OverCurrent_Protection(void);

@@ -1,17 +1,35 @@
 /**
+ *  Created on: 9 de mar de 2021 
  *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  * Aquivo: main.c
  */
 
 #include "main.h"
 
-
-int Manual_Start = 0;
+/****************************************************************************************
+ ******************************      EXECUTION OPTIONS        ***************************
+ ****************************************************************************************/
+//#define MODULACAO_SEMCONTROLE    // Comenta para habilitar modulação em malha aberta
 
 /****************************************************************************************
  *************************      GLOBAL VARIABLES DECLARATION        *********************
  ****************************************************************************************/
 static Inverter inv;
+
+//Control loop references
+float cos_a = 0;
+float cos_b = 0;
+float cos_c = 0;
+float ref_mod = 0;
+float fo = 0;
+float theta = 0;
+float Vpwm_norm_a = 0;
+float Vpwm_norm_b = 0;
+float Vpwm_norm_c = 0;
+uint16_t dutya = 0, dutyb = 0, dutyc = 0;
+
+// Manual command to turn on PWM
+int Manual_Start=0;
 
 int main(void)
 {
@@ -22,6 +40,16 @@ int main(void)
 
     while(1){
 
+
+      if (Manual_Start)
+      {
+          PWM_Enable();
+      }
+
+      if (!Manual_Start)
+      {
+          PWM_Disable();
+      }
 
     }
 }
@@ -46,26 +74,59 @@ __interrupt void isr_adc(void){
     Msrmt_Update(&inv.Ifb, AdcbResultRegs.ADCRESULT0-2252);
     Msrmt_Update(&inv.Ifc, AdcaResultRegs.ADCRESULT0-2252);
 
+   PLL_Loop();
 
    // PROTECTION ALGORITHM (PWM is disabled if limits are exceeded)
    Voltage_Protection();
    OverCurrent_Protection();
    Frequency_Protection();
 
+   if (Manual_Start)
+   {
+       Current_Loop();
+   }
+
+      Msrmt_Index_Update();
+
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;      // Limpa flag INT1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;     // Limpa flag
 
     GpioDataRegs.GPADAT.bit.GPIO15 = 0; //Change pin state to verify task time consumption
 
-    if(Manual_Start) PWM_Enable();
-    else PWM_Disable();
-
-    EPwm4Regs.CMPA.bit.CMPA = 1500;
-    EPwm5Regs.CMPA.bit.CMPA = 1500;
-    EPwm6Regs.CMPA.bit.CMPA = 1500;
-
 }
 //*/
+
+
+__attribute__((always_inline)) void PLL_Loop()
+{
+        fo = (NOM_GRID_FREQ);
+        theta = (theta > TWO_PI) ? (theta - TWO_PI) : (theta + WT_DELTA);
+
+        cos_a = __cos(theta);
+        cos_b = __cos(theta-2.094395102393195);
+        cos_c = __cos(theta+2.094395102393195);
+
+}
+
+
+__attribute__((always_inline)) void Current_Loop()
+{
+
+    Vpwm_norm_a = ref_mod*cos_a;
+    Vpwm_norm_b = ref_mod*cos_b;
+    Vpwm_norm_c = ref_mod*cos_c;
+
+
+    dutya = PRD_div2 + Vpwm_norm_a*PRD_div2;
+    dutyb = PRD_div2 + Vpwm_norm_b*PRD_div2;
+    dutyc = PRD_div2 + Vpwm_norm_c*PRD_div2;
+
+    // duty cycle
+    EPwm4Regs.CMPA.bit.CMPA = dutya;
+    EPwm5Regs.CMPA.bit.CMPA =  dutyb;
+    EPwm6Regs.CMPA.bit.CMPA =  dutyc;
+
+}
 
 
 __attribute__((always_inline)) void OverCurrent_Protection(void)
