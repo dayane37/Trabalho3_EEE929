@@ -1,10 +1,12 @@
 /**
- * Criado por Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  * Aquivo: main.c
  */
 
 #include "main.h"
 
+
+int Manual_Start = 0;
 
 /****************************************************************************************
  *************************      GLOBAL VARIABLES DECLARATION        *********************
@@ -55,11 +57,15 @@ __interrupt void isr_adc(void){
 
     GpioDataRegs.GPADAT.bit.GPIO15 = 0; //Change pin state to verify task time consumption
 
+    if(Manual_Start) PWM_Enable();
+    else PWM_Disable();
+
     EPwm4Regs.CMPA.bit.CMPA = 1500;
     EPwm5Regs.CMPA.bit.CMPA = 1500;
     EPwm6Regs.CMPA.bit.CMPA = 1500;
 
 }
+//*/
 
 
 __attribute__((always_inline)) void OverCurrent_Protection(void)
@@ -93,6 +99,18 @@ __attribute__((always_inline)) void Frequency_Protection(void)
 
 __attribute__((always_inline)) void Error_Handler(err_code_t errorCode)
 {
+    PWM_Disable();
+}
+
+static void PWM_Enable(void)
+{
+    GpioDataRegs.GPADAT.bit.GPIO26 = 0; //Enable PWM
+}
+
+//-----------------------------------------------------------------------------
+static void PWM_Disable(void)
+{
+    GpioDataRegs.GPADAT.bit.GPIO26 = 1; //Disable PWM
 }
 
 

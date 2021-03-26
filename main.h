@@ -1,8 +1,7 @@
 /*
  * main.h
  *
- *  Created on: 9 de mar de 2021
- *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ *  Created on: 9 de mar de 2021 *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  */
 
 #include "Peripheral_Setup.h"
@@ -83,6 +82,8 @@ __attribute__((always_inline)) void OverCurrent_Protection(void);
 __attribute__((always_inline)) void Voltage_Protection(void);
 __attribute__((always_inline)) void Frequency_Protection(void);
 __attribute__((always_inline)) void Error_Handler(err_code_t error);
+static void PWM_Enable(void);
+static void PWM_Disable(void);
 
 // Interruptions
 __interrupt void isr_cpu_timer0(void);
