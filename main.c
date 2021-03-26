@@ -44,6 +44,12 @@ __interrupt void isr_adc(void){
     Msrmt_Update(&inv.Ifb, AdcbResultRegs.ADCRESULT0-2252);
     Msrmt_Update(&inv.Ifc, AdcaResultRegs.ADCRESULT0-2252);
 
+
+   // PROTECTION ALGORITHM (PWM is disabled if limits are exceeded)
+   Voltage_Protection();
+   OverCurrent_Protection();
+   Frequency_Protection();
+
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;      // Limpa flag INT1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;     // Limpa flag
 
@@ -53,6 +59,40 @@ __interrupt void isr_adc(void){
     EPwm5Regs.CMPA.bit.CMPA = 1500;
     EPwm6Regs.CMPA.bit.CMPA = 1500;
 
+}
+
+
+__attribute__((always_inline)) void OverCurrent_Protection(void)
+{
+    if (inv.Ifa.inst > IO_MAX || inv.Ifb.inst > IO_MAX || inv.Ifc.inst > IO_MAX) //Instantaneous overcurrent (short-circuit protection)
+    {
+        Error_Handler(INVERTER_OVERCURRENT_2);
+    }
+}
+
+__attribute__((always_inline)) void Voltage_Protection(void)
+{
+    if (inv.Vcc > VCC_MAX)
+    {
+        Error_Handler(VCC_OVERVOLTAGE);
+    }
+}
+
+__attribute__((always_inline)) void Frequency_Protection(void)
+{
+    if (inv.freq > F_MAX)
+    {
+        Error_Handler(GRID_FREQUENCY_HIGH);
+    }
+    else if (inv.freq < F_MIN)
+    {
+        Error_Handler(GRID_FREQUENCY_LOW);
+    }
+}
+
+
+__attribute__((always_inline)) void Error_Handler(err_code_t errorCode)
+{
 }
 
 

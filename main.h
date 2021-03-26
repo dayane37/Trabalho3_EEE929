@@ -41,6 +41,19 @@
 #define TWO_PI 6.283185307179586476925286766559 //2*pi (Numeric Constant)
 #define WT_DELTA (0.01570796)    //Angle step for internal reference generation
 
+#define VCC_MAX     60                  //Maximum DC bus voltage (450/HV) _IQ(2.250)
+#define VG_RMS_MAX  60                  //Maximum RMS grid voltage (1.1 x Vrms - ABNT 16149) (242/HV) _IQ(1.210)
+#define VG_INST_MAX 60                 //Maximum instantaneous grid voltage (400/Hv) _IQ(2.0)
+#define IO_MAX      8                      //Maximum output current (20/HI) _IQ(1.0)
+#define IO_MAX_OVL  8                  //Maximum output current - overload protection (15/HI) _IQ(0.75)
+#define F_MIN       45.5                    //Minimum operating frequency (ABNT 16149)_IQ22(57.5) _IQ22(55.5)
+#define F_MAX       55.5                        //Maximum operating frequency (ABNT 16149)_IQ22(62.5) _IQ22(65.5)
+
+typedef enum {
+    NO_ERROR,INVERTER_OVERCURRENT_0,INVERTER_OVERCURRENT_1,INVERTER_OVERCURRENT_2, INVERTER_OVERCURRENT_RMS, BOOST_OVERCURRENT, RCMU_LIMIT_EXCEED, VCC_OVERVOLTAGE,
+                         TEMP_LIMIT_EXCEED, VGRID_OVERVOLTAGE, VGRID_UNDERVOLTAGE, GRID_FREQUENCY_HIGH,
+                         GRID_FREQUENCY_LOW, INIT_FAIL,UNDEFINED_INVERTER_MODE} err_code_t;
+
 
 typedef struct{
    MEASUREMENT Ifa;        //Analog filtered Output Current
@@ -55,6 +68,7 @@ typedef struct{
    float ioref_alfa;
    float ioref_beta;
    float voref;
+   err_code_t Error;           //Error Code
 }Inverter;
 
 /****************************************************************************************
@@ -63,6 +77,12 @@ typedef struct{
 //Initialization
 static void Data_Init(void);
 static void System_Init(void);
+
+//Protection
+__attribute__((always_inline)) void OverCurrent_Protection(void);
+__attribute__((always_inline)) void Voltage_Protection(void);
+__attribute__((always_inline)) void Frequency_Protection(void);
+__attribute__((always_inline)) void Error_Handler(err_code_t error);
 
 // Interruptions
 __interrupt void isr_cpu_timer0(void);
