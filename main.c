@@ -341,12 +341,49 @@ __attribute__((always_inline)) void Error_Handler(err_code_t errorCode)
 static void PWM_Enable(void)
 {
     GpioDataRegs.GPADAT.bit.GPIO26 = 0; //Enable PWM
+
+    // Desativa o Tripzone dos PWM e habilita os pulsos
+    EALLOW;                // Enable EALLOW protected register access
+    EPwm4Regs.TZCLR.bit.OST = 1;
+    EPwm5Regs.TZCLR.bit.OST = 1;
+    EPwm6Regs.TZCLR.bit.OST = 1;
+    EPwm4Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM4
+    EPwm4Regs.TZCTL.bit.TZA = 0x3;   // Do nothing, no action is taken on EPWMxA
+    EPwm4Regs.TZCTL.bit.TZB = 0x3;   // Do nothing, no action is taken on EPWMxB
+    EPwm5Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM5
+    EPwm5Regs.TZCTL.bit.TZA = 0x3;   // Do nothing, no action is taken on EPWMxA
+    EPwm5Regs.TZCTL.bit.TZB = 0x3;   // Do nothing, no action is taken on EPWMxB
+    EPwm6Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM6
+    EPwm6Regs.TZCTL.bit.TZA = 0x3;   // Do nothing, no action is taken on EPWMxA
+    EPwm6Regs.TZCTL.bit.TZB = 0x3;   // Do nothing, no action is taken on EPWMxB
+    EDIS;                  // Disable EALLOW protected register access
+
 }
 
 //-----------------------------------------------------------------------------
 static void PWM_Disable(void)
 {
     GpioDataRegs.GPADAT.bit.GPIO26 = 1; //Disable PWM
+
+    // Ativa o Tripzone dos PWM e desabilita os pulsos
+    EALLOW;
+
+    EPwm4Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM4
+    EPwm4Regs.TZFRC.bit.OST = 1;
+    EPwm4Regs.TZCTL.bit.TZA = 0x2;   // Trip action set to force-low for output A
+    EPwm4Regs.TZCTL.bit.TZB = 0x2;   // Trip action set to force-low for output B
+
+    EPwm5Regs.TZFRC.bit.OST = 1;
+    EPwm5Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM5
+    EPwm5Regs.TZCTL.bit.TZA = 0x2;   // Trip action set to force-low for output A
+    EPwm5Regs.TZCTL.bit.TZB = 0x2;   // Trip action set to force-low for output B
+
+    EPwm6Regs.TZFRC.bit.OST = 1;
+    EPwm6Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM6
+    EPwm6Regs.TZCTL.bit.TZA = 0x2;   // Trip action set to force-low for output A
+    EPwm6Regs.TZCTL.bit.TZB = 0x2;   // Trip action set to force-low for output B
+    EDIS;
+
 }
 
 
@@ -393,6 +430,23 @@ static void System_Init(void)
     Setup_GPIO();
     Setup_ePWM();
     Setup_ADC();
+
+
+    // Ativa o Tripzone dos PWM e desabilita os pulsos até o comando PWM_ENABLE
+    EALLOW;
+    EPwm4Regs.TZFRC.bit.OST = 1;
+    EPwm5Regs.TZFRC.bit.OST = 1;
+    EPwm6Regs.TZFRC.bit.OST = 1;
+    EPwm4Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM4
+    EPwm4Regs.TZCTL.bit.TZA = 0x2;   // Trip action set to force-low for output A
+    EPwm4Regs.TZCTL.bit.TZB = 0x2;   // Trip action set to force-low for output B
+    EPwm5Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM5
+    EPwm5Regs.TZCTL.bit.TZA = 0x2;   // Trip action set to force-low for output A
+    EPwm5Regs.TZCTL.bit.TZB = 0x2;   // Trip action set to force-low for output B
+    EPwm6Regs.TZSEL.bit.OSHT1 = 0x1; // TZ1 configured for OSHT trip of ePWM6
+    EPwm6Regs.TZCTL.bit.TZA = 0x2;   // Trip action set to force-low for output A
+    EPwm6Regs.TZCTL.bit.TZB = 0x2;   // Trip action set to force-low for output B
+    EDIS;
 
     EALLOW;
     PieVectTable.TIMER0_INT = &isr_cpu_timer0;   // Redirecionar interrupção do timer para função
