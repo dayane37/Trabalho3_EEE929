@@ -1,5 +1,5 @@
 /**
- *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ * Criado por Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  * Aquivo: main.c
  */
 
@@ -8,7 +8,7 @@
 /****************************************************************************************
  ******************************      EXECUTION OPTIONS        ***************************
  ****************************************************************************************/
-//#define MODULACAO_SEMCONTROLE    // Comenta para habilitar modulação em malha aberta
+#define MODULACAO_SEMCONTROLE    // Comenta para habilitar modulação em malha aberta
 
 /****************************************************************************************
  *************************      GLOBAL VARIABLES DECLARATION        *********************
@@ -16,19 +16,35 @@
 static Inverter inv;
 static PR PR_ialfa;             //Alfa current controller
 static PR PR_ibeta;             //Beta current controller
+static PR PR_ialfa5;             //Alfa current controller
+static PR PR_ibeta5;             //Beta current controller
+static PR PR_ialfa7;             //Alfa current controller
+static PR PR_ibeta7;             //Beta current controller
 
 //Control loop references
 float Io_ref = 0;   //Peak
+float Io_ref5 = 0;   //Peak
+float Io_ref7 = 0;   //Peak
 float Io_ref_in = 0;
+float Io_ref5_in = 0;
+float Io_ref7_in = 0;
 float ia_inst = 0;
 float ib_inst = 0;
 float ic_inst = 0;
 float cos_a = 0;
 float cos_b = 0;
 float cos_c = 0;
+float cos5_a = 0;
+float cos5_b = 0;
+float cos5_c = 0;
+float cos7_a = 0;
+float cos7_b = 0;
+float cos7_c = 0;
 float ref_mod = 0;
 float fo = 0;
 float theta = 0;
+float theta5 = 0;
+float theta7 = 0;
 float Vpwm_norm_a = 0;
 float Vpwm_norm_b = 0;
 float Vpwm_norm_c = 0;
@@ -92,8 +108,14 @@ int main(void)
             inv.ioref_alfa=0;
             inv.ioref_beta=0;
             Io_ref=0;
+            Io_ref5=0;
+            Io_ref7=0;
             pr_reg_reset(&PR_ialfa);
             pr_reg_reset(&PR_ibeta);
+            pr_reg_reset(&PR_ialfa5);
+            pr_reg_reset(&PR_ibeta5);
+            pr_reg_reset(&PR_ialfa7);
+            pr_reg_reset(&PR_ibeta7);
 
             if(!Pre_Sync()) inv.State = START_UP_COMPLETE;
             else if (Manual_Start) {
@@ -193,10 +215,21 @@ __attribute__((always_inline)) void PLL_Loop()
         fo = (NOM_GRID_FREQ);
         theta = (theta > TWO_PI) ? (theta - TWO_PI) : (theta + WT_DELTA);
 
+        theta5 = fmod(5*theta,TWO_PI);
+        theta7 = fmod(7*theta,TWO_PI);
+
+
         cos_a = __cos(theta);
         cos_b = __cos(theta-2.094395102393195);
         cos_c = __cos(theta+2.094395102393195);
 
+        cos5_a = __cos(theta5);
+        cos5_b = __cos(theta5-10.471975511965975);
+        cos5_c = __cos(theta5+10.471975511965975);
+
+        cos7_a = __cos(theta7);
+        cos7_b = __cos(theta7-14.660765716752365);
+        cos7_c = __cos(theta7+14.660765716752365);
 }
 
 __attribute__((always_inline)) void Feeding_Loop()
@@ -204,10 +237,12 @@ __attribute__((always_inline)) void Feeding_Loop()
 
 
         Io_ref = Io_ref + (0.01)*(Io_ref_in - Io_ref); //  Current reference calculation
+        Io_ref5 = Io_ref5 + (0.01)*(Io_ref5_in - Io_ref5);
+        Io_ref7 = Io_ref7 + (0.01)*(Io_ref7_in - Io_ref7);
 
-        ia_inst = Io_ref*cos_a;
-        ib_inst = Io_ref*cos_b;
-        ic_inst = Io_ref*cos_c;
+        ia_inst = Io_ref*cos_a + Io_ref5*cos5_a + Io_ref7*cos7_a;
+        ib_inst = Io_ref*cos_b + Io_ref5*cos5_b + Io_ref7*cos7_b;
+        ic_inst = Io_ref*cos_c + Io_ref5*cos5_c + Io_ref7*cos7_c;
 
         inv.ioref_alfa = 0.66666666666667*(ia_inst - 0.5*ib_inst - 0.5*ic_inst);  //  alpha-current reference calculation
         inv.ioref_beta = 0.5773502692*(ib_inst - ic_inst); //  beta-current reference calculation
@@ -231,12 +266,16 @@ __attribute__((always_inline)) void Current_Loop()
     //Current controller
     PR_ialfa.Err = inv.ioref_alfa - inv.Ialfabeta.alfa;
     calc_PR(&PR_ialfa, PR_ialfa.Err);
+    calc_PR(&PR_ialfa5, PR_ialfa.Err);
+    calc_PR(&PR_ialfa7, PR_ialfa.Err);
 
     PR_ibeta.Err = inv.ioref_beta - inv.Ialfabeta.beta;
     calc_PR(&PR_ibeta, PR_ibeta.Err);
+    calc_PR(&PR_ibeta5, PR_ibeta.Err);
+    calc_PR(&PR_ibeta7, PR_ibeta.Err);
 
-    inv.alfa = PR_ialfa.Kp*PR_ialfa.Err+PR_ialfa.Out;
-    inv.beta = PR_ibeta.Kp*PR_ibeta.Err+PR_ibeta.Out;
+    inv.alfa = PR_ialfa.Kp*PR_ialfa.Err+PR_ialfa.Out+PR_ialfa5.Out+PR_ialfa7.Out;
+    inv.beta = PR_ibeta.Kp*PR_ibeta.Err+PR_ibeta.Out+PR_ibeta5.Out+PR_ibeta7.Out;
 
     alfabeta2abc(&inv, &inv.Vabc);
 
@@ -316,6 +355,16 @@ __attribute__((always_inline)) void Voltage_Protection(void)
     {
         Error_Handler(VCC_OVERVOLTAGE);
     }
+    //else if (inv.Vga.RMS > VG_RMS_MAX || inv.Vgb.RMS > VG_RMS_MAX || inv.Vgc.RMS > VG_RMS_MAX) // Incluir timer de acordo com NBR 16149
+    //{
+    //    Error_Handler(VGRID_OVERVOLTAGE);
+    // }
+    //else if (inv.Vga.inst >= VG_INST_MAX || inv.Vgb.inst >= VG_INST_MAX || inv.Vgb.inst >= VG_INST_MAX || inv.Vgc.inst >= VG_INST_MAX)
+    //{
+    //    Error_Handler(VGRID_OVERVOLTAGE);
+    //}
+
+
 }
 
 __attribute__((always_inline)) void Frequency_Protection(void)
@@ -481,6 +530,27 @@ static void Setup_Controllers(void)
     PR_ibeta.ch[1] =  -0.157068238876871;
     PR_ibeta.ch[2] =   -1.999690445418618;
     PR_ibeta.ch[3] = 0.999937172704449;
+
+
+    PR_ialfa5.ch[0] = 0.062765306778591;
+    PR_ialfa5.ch[1] =  -0.062765306778591;
+    PR_ialfa5.ch[2] =   -1.993772095643971;
+    PR_ialfa5.ch[3] =  0.999937234693221;
+
+    PR_ialfa7.ch[0] = 0.062703354706474;
+    PR_ialfa7.ch[1] =  -0.062703354706474;
+    PR_ialfa7.ch[2] =   -1.987859586224005;
+    PR_ialfa7.ch[3] = 0.999937296645294;
+
+    PR_ibeta5.ch[0] = 0.062765306778591;
+    PR_ibeta5.ch[1] =  -0.062765306778591;
+    PR_ibeta5.ch[2] =   -1.993772095643971;
+    PR_ibeta5.ch[3] =  0.999937234693221;
+
+    PR_ibeta7.ch[0] = 0.062703354706474;
+    PR_ibeta7.ch[1] =  -0.062703354706474;
+    PR_ibeta7.ch[2] =   -1.987859586224005;
+    PR_ibeta7.ch[3] = 0.999937296645294;
 
     PR_ialfa.Kp =  24.9813;
     PR_ibeta.Kp =  24.9813;
