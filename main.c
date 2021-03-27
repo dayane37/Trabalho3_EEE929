@@ -14,8 +14,15 @@
  *************************      GLOBAL VARIABLES DECLARATION        *********************
  ****************************************************************************************/
 static Inverter inv;
+static PR PR_ialfa;             //Alfa current controller
+static PR PR_ibeta;             //Beta current controller
 
 //Control loop references
+float Io_ref = 0;   //Peak
+float Io_ref_in = 0;
+float ia_inst = 0;
+float ib_inst = 0;
+float ic_inst = 0;
 float cos_a = 0;
 float cos_b = 0;
 float cos_c = 0;
@@ -48,6 +55,12 @@ int main(void)
 
     Operation_Mode();  //Check the inverter operating mode
 
+    Setup_Controllers();  //Setup current and voltage controllers
+
+
+    //GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
+   // GpioDataRegs.GPADAT.bit.GPIO31 = 1;
+
     while(1){
 
 // State Machine---------------------------------------------------------
@@ -73,6 +86,11 @@ int main(void)
             inv.State = CONNECTED;
             break;
         case CONNECTED:
+            inv.ioref_alfa=0;
+            inv.ioref_beta=0;
+            Io_ref=0;
+            pr_reg_reset(&PR_ialfa);
+            pr_reg_reset(&PR_ibeta);
 
             if(!Pre_Sync()) inv.State = START_UP_COMPLETE;
             else if (Manual_Start) {
@@ -125,10 +143,13 @@ __interrupt void isr_adc(void){
 
    if (inv.State == PWM_ON)
       {
-         Current_Loop();
+          if (inv.Mode == Grid_Feeding) Feeding_Loop();
+          Current_Loop();
       }
 
       Msrmt_Index_Update();
+
+
 
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;      // Limpa flag INT1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;     // Limpa flag
@@ -140,6 +161,29 @@ __interrupt void isr_adc(void){
 }
 //*/
 
+__attribute__((always_inline)) void abc2alfabeta(MEASUREMENT *A, MEASUREMENT *B,MEASUREMENT *C, ALFABETA *alfabeta)
+{
+    // Invariante em amplitude
+    alfabeta->alfa = 0.66666666666667*(A->inst - 0.5*B->inst - 0.5*C->inst);
+    alfabeta->beta = 0.5773502692*(B->inst - C->inst);
+
+    // Invariante em potência
+   //p_alfabeta->alfa = 0.816496580927726*(p_abc->a - 0.5*p_abc->b - 0.5*p_abc->c);
+   //p_alfabeta->beta = 0.816496580927726*(0.866025403784439*p_abc->b - 0.866025403784439*p_abc->c);
+}
+
+__attribute__((always_inline)) void alfabeta2abc(Inverter* alfabeta, ABC* abc)
+{
+    // Invariante em amplitude
+    abc->a = alfabeta->alfa;
+    abc->b = -0.5*alfabeta->alfa + 0.866025403784439*alfabeta->beta;
+    abc->c = -0.5*alfabeta->alfa - 0.866025403784439*alfabeta->beta;
+
+    // Invariante em potência
+    //p_ABC->a = 0.816496580927726*p_alfabeta->alfa;
+    //p_ABC->b = 0.816496580927726*(-0.5*p_alfabeta->alfa + 0.866025403784439*p_alfabeta->beta);
+    //p_ABC->c = 0.816496580927726*(-0.5*p_alfabeta->alfa - 0.866025403784439*p_alfabeta->beta);
+}
 
 __attribute__((always_inline)) void PLL_Loop()
 {
@@ -152,14 +196,59 @@ __attribute__((always_inline)) void PLL_Loop()
 
 }
 
+__attribute__((always_inline)) void Feeding_Loop()
+{
+
+
+        Io_ref = Io_ref + (0.01)*(Io_ref_in - Io_ref); //  Current reference calculation
+
+        ia_inst = Io_ref*cos_a;
+        ib_inst = Io_ref*cos_b;
+        ic_inst = Io_ref*cos_c;
+
+        inv.ioref_alfa = 0.66666666666667*(ia_inst - 0.5*ib_inst - 0.5*ic_inst);  //  alpha-current reference calculation
+        inv.ioref_beta = 0.5773502692*(ib_inst - ic_inst); //  beta-current reference calculation
+        //inv.ioref_alfa = Io_ref*cos_;
+        //inv.ioref_beta = Io_ref*sin_;
+}
 
 __attribute__((always_inline)) void Current_Loop()
 {
 
+    #ifdef MODULACAO_SEMCONTROLE
 
-    Vpwm_norm_a = ref_mod*cos_a;
-    Vpwm_norm_b = ref_mod*cos_b;
-    Vpwm_norm_c = ref_mod*cos_c;
+    vsa_svpwm = ref_mod*cos_a;
+    vsb_svpwm = ref_mod*cos_b;
+    vsc_svpwm = ref_mod*cos_c;
+
+    #else
+
+    abc2alfabeta(&inv.Ifa, &inv.Ifb, &inv.Ifc, &inv.Ialfabeta);
+
+    //Current controller
+    PR_ialfa.Err = inv.ioref_alfa - inv.Ialfabeta.alfa;
+    calc_PR(&PR_ialfa, PR_ialfa.Err);
+
+    PR_ibeta.Err = inv.ioref_beta - inv.Ialfabeta.beta;
+    calc_PR(&PR_ibeta, PR_ibeta.Err);
+
+    inv.alfa = PR_ialfa.Kp*PR_ialfa.Err+PR_ialfa.Out;
+    inv.beta = PR_ibeta.Kp*PR_ibeta.Err+PR_ibeta.Out;
+
+    alfabeta2abc(&inv, &inv.Vabc);
+
+    Vpwm_norm_a = __divf32(inv.Vabc.a*1.732050807568877,inv.Vcc);
+    Vpwm_norm_b =  __divf32(inv.Vabc.b*1.732050807568877,inv.Vcc);
+    Vpwm_norm_c =  __divf32(inv.Vabc.c*1.732050807568877,inv.Vcc);
+
+    if(Vpwm_norm_a > 1) Vpwm_norm_a = 1;
+    if(Vpwm_norm_a < -1) Vpwm_norm_a = -1;
+    if(Vpwm_norm_b > 1) Vpwm_norm_b = 1;
+    if(Vpwm_norm_b < -1) Vpwm_norm_b = -1;
+    if(Vpwm_norm_c > 1) Vpwm_norm_c = 1;
+    if(Vpwm_norm_c < -1) Vpwm_norm_c = -1;
+
+   #endif
 
 
     dutya = PRD_div2 + Vpwm_norm_a*PRD_div2;
@@ -288,3 +377,18 @@ static void Operation_Mode(void)
     inv.Mode=Grid_Feeding;
 }
 
+static void Setup_Controllers(void)
+{
+    PR_ialfa.ch[0] = 0.157068238876871;
+    PR_ialfa.ch[1] =  -0.157068238876871;
+    PR_ialfa.ch[2] =   -1.999690445418618;
+    PR_ialfa.ch[3] = 0.999937172704449;
+
+    PR_ibeta.ch[0] = 0.157068238876871;
+    PR_ibeta.ch[1] =  -0.157068238876871;
+    PR_ibeta.ch[2] =   -1.999690445418618;
+    PR_ibeta.ch[3] = 0.999937172704449;
+
+    PR_ialfa.Kp =  24.9813;
+    PR_ibeta.Kp =  24.9813;
+}

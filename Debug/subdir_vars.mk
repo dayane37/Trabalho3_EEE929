@@ -24,7 +24,8 @@ C_SRCS += \
 ../F2837xD_SysCtrl.c \
 ../Measurements.c \
 ../Peripheral_Setup.c \
-../main.c 
+../main.c \
+../pr_reg.c 
 
 C_DEPS += \
 ./F2837xD_Adc.d \
@@ -37,7 +38,8 @@ C_DEPS += \
 ./F2837xD_SysCtrl.d \
 ./Measurements.d \
 ./Peripheral_Setup.d \
-./main.d 
+./main.d \
+./pr_reg.d 
 
 OBJS += \
 ./F2837xD_Adc.obj \
@@ -52,7 +54,8 @@ OBJS += \
 ./F2837xD_usDelay.obj \
 ./Measurements.obj \
 ./Peripheral_Setup.obj \
-./main.obj 
+./main.obj \
+./pr_reg.obj 
 
 ASM_DEPS += \
 ./F2837xD_CodeStartBranch.d \
@@ -71,7 +74,8 @@ OBJS__QUOTED += \
 "F2837xD_usDelay.obj" \
 "Measurements.obj" \
 "Peripheral_Setup.obj" \
-"main.obj" 
+"main.obj" \
+"pr_reg.obj" 
 
 C_DEPS__QUOTED += \
 "F2837xD_Adc.d" \
@@ -84,7 +88,8 @@ C_DEPS__QUOTED += \
 "F2837xD_SysCtrl.d" \
 "Measurements.d" \
 "Peripheral_Setup.d" \
-"main.d" 
+"main.d" \
+"pr_reg.d" 
 
 ASM_DEPS__QUOTED += \
 "F2837xD_CodeStartBranch.d" \
@@ -101,7 +106,8 @@ C_SRCS__QUOTED += \
 "../F2837xD_SysCtrl.c" \
 "../Measurements.c" \
 "../Peripheral_Setup.c" \
-"../main.c" 
+"../main.c" \
+"../pr_reg.c" 
 
 ASM_SRCS__QUOTED += \
 "../F2837xD_CodeStartBranch.asm" \

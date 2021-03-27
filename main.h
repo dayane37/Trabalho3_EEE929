@@ -6,6 +6,7 @@
  */
 
 #include "Peripheral_Setup.h"
+#include "pr_reg.h"
 #include "Measurements.h"
 #include "stdlib.h"
 #include "stdio.h"
@@ -115,6 +116,7 @@ static void Setup_Controllers(void);
 __attribute__((always_inline)) void I_V_Control(void);
 __attribute__((always_inline)) void PLL_Loop(void);
 __attribute__((always_inline)) int Pre_Sync(void);
+__attribute__((always_inline)) void Feeding_Loop(void);
 __attribute__((always_inline)) void Current_Loop(void);
 
 //Protection
