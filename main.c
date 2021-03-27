@@ -1,5 +1,5 @@
 /**
- * Criado por Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  * Aquivo: main.c
  */
 
@@ -32,6 +32,9 @@ float theta = 0;
 float Vpwm_norm_a = 0;
 float Vpwm_norm_b = 0;
 float Vpwm_norm_c = 0;
+float vmin = 0;
+float vmax = 0;
+float vsa_svpwm = 0, vsb_svpwm = 0, vsc_svpwm = 0;
 uint16_t dutya = 0, dutyb = 0, dutyc = 0;
 
 #define PLOT_SAMPLES 400
@@ -248,12 +251,48 @@ __attribute__((always_inline)) void Current_Loop()
     if(Vpwm_norm_c > 1) Vpwm_norm_c = 1;
     if(Vpwm_norm_c < -1) Vpwm_norm_c = -1;
 
-   #endif
+    //Cálculo da seq zero para o SVPWM
+    if(Vpwm_norm_a<Vpwm_norm_b && Vpwm_norm_a<Vpwm_norm_c && Vpwm_norm_b>Vpwm_norm_c)
+    {
+        vmin = Vpwm_norm_a;
+        vmax = Vpwm_norm_b;
+    }
+    else if(Vpwm_norm_a<Vpwm_norm_b && Vpwm_norm_a<Vpwm_norm_c && Vpwm_norm_c>Vpwm_norm_b)
+    {
+        vmin = Vpwm_norm_a;
+        vmax = Vpwm_norm_c;
+    }
+    else if(Vpwm_norm_b<Vpwm_norm_a && Vpwm_norm_b<Vpwm_norm_c && Vpwm_norm_a>Vpwm_norm_c)
+    {
+        vmin = Vpwm_norm_b;
+        vmax = Vpwm_norm_a;
+    }
+    else if(Vpwm_norm_b<Vpwm_norm_a && Vpwm_norm_b<Vpwm_norm_c && Vpwm_norm_c>Vpwm_norm_a)
+    {
+        vmin = Vpwm_norm_b;
+        vmax = Vpwm_norm_c;
+    }
+    else if(Vpwm_norm_c<Vpwm_norm_a && Vpwm_norm_c<Vpwm_norm_b && Vpwm_norm_a>Vpwm_norm_b)
+    {
+        vmin = Vpwm_norm_c;
+        vmax = Vpwm_norm_a;
+    }
+    else if(Vpwm_norm_c<Vpwm_norm_a && Vpwm_norm_c<Vpwm_norm_b && Vpwm_norm_b>Vpwm_norm_a)
+    {
+        vmin = Vpwm_norm_c;
+        vmax = Vpwm_norm_b;
+    }
+
+    vsa_svpwm = -0.5*(vmin+vmax)+Vpwm_norm_a;
+    vsb_svpwm = -0.5*(vmin+vmax)+Vpwm_norm_b;
+    vsc_svpwm = -0.5*(vmin+vmax)+Vpwm_norm_c;
+
+    #endif
 
 
-    dutya = PRD_div2 + Vpwm_norm_a*PRD_div2;
-    dutyb = PRD_div2 + Vpwm_norm_b*PRD_div2;
-    dutyc = PRD_div2 + Vpwm_norm_c*PRD_div2;
+    dutya = PRD_div2 + 1.154700538379252*vsa_svpwm*PRD_div2;
+    dutyb = PRD_div2 + 1.154700538379252*vsb_svpwm*PRD_div2;
+    dutyc = PRD_div2 + 1.154700538379252*vsc_svpwm*PRD_div2;
 
     // duty cycle
     EPwm4Regs.CMPA.bit.CMPA = dutya;

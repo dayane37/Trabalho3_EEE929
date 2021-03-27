@@ -2,7 +2,7 @@
  * Measurements.c
  *
  *  Created on: 9 de mar de 2021
- * Criado por Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
+ *      Author: Dayane do Carmo Mendonça,João Marcus Soares Callegari,William Caires Silva Amorim
  */
 #include "Measurements.h"
 
